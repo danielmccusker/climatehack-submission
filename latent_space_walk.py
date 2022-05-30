@@ -18,6 +18,17 @@ def transform_back(tens):
     return (tens/2 + 0.5)
 
 
+def interpolate_points(p1, p2, n_steps=20):
+	# interpolate ratios between the points
+	ratios = np.linspace(0, 1, num=n_steps)
+	# linear interpolate vectors
+	vectors = list()
+	for ratio in ratios:
+		v = (1.0 - ratio) * p1 + ratio * p2
+		vectors.append(v)
+	return np.asarray(vectors)
+
+
 def main():
 
     parser = argparse.ArgumentParser(description="PyTorch WAE-GAN")
@@ -63,39 +74,43 @@ def main():
     )
     args = parser.parse_args()
 
-    ground_truth_data = torch.tensor(np.load('./ground_truth_images.npy'))
-    print(ground_truth_data.shape)
-
     encoder = Encoder(args)
-    decoder = Decoder(args)
-
-    print('model definition')
-    print(encoder)
-
-    state_dict = torch.load('./encoder.pt', map_location='cpu')
-    print('loaded model')
-    for k, v in state_dict.items():
-        if 'fc' in k:
-            print(k)
-            print(v.shape)
-            print()
-
     encoder.load_state_dict(torch.load('./encoder.pt', map_location='cpu'))
     encoder.eval()
+
+    decoder = Decoder(args)
     decoder.load_state_dict(torch.load('./decoder.pt', map_location='cpu'))
     decoder.eval()
 
-   
-    mapping = encoder(ground_truth_data)
-    print(torch.mean(mapping, axis=1), torch.std(mapping, axis=1))
-    inv_mapping = decoder(mapping)
+    ### Draw random points in the latent space and map to pixel space
     
-
-    save_image(transform_back(ground_truth_data.data),
-               "./ground_truth_data.png",
-               )
+    rand_inits = torch.stack([torch.normal(mean=torch.zeros(256), std=torch.ones(256)*30) for _ in range(10)])
+    inv_mapping = decoder(rand_inits)
+    
     save_image(transform_back(inv_mapping.data),
-               "./reconstructed_data.png",
+               "./random_initializations.png",
+              )
+
+    ground_truth_data = torch.tensor(np.load('./ground_truth_images.npy'))[[0, 4]]
+    mapping = encoder(ground_truth_data)
+
+    ### Interpolated walk
+    walk = torch.tensor(interpolate_points(mapping[0].detach().numpy(), mapping[1].detach().numpy(), 20))
+
+    ### Random walk
+    # walk[0] = ground_truth_data[0].numpy()
+    # end = ground_truth_data[1].numpy()
+    # for i in range(99):
+    #     norm = np.linalg.norm(walk[i])
+    #     step = walk[i]
+    #     for j, s in enumerate(step):
+    #         step[j] += np.random.normal(scale=10)
+    #     walk[i+1] = step / norm
+
+    inv_mapping = decoder(walk)
+
+    save_image(transform_back(inv_mapping.data),
+               "./walk.png",
               )
 
 if __name__ == "__main__":

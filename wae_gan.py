@@ -67,6 +67,52 @@ def frozen_params(module: nn.Module):
         p.requires_grad = False
 
 
+# class Encoder(nn.Module):
+#     def __init__(self, args):
+#         super(Encoder, self).__init__()
+
+#         self.n_channel = args.n_channel
+#         self.dim_h = args.dim_h
+#         self.n_z = args.n_z
+
+#         # output should be 1x1
+#         self.main = nn.Sequential(
+#             ConvBNRelu(
+#                 1, self.dim_h, stride=2, kernel_size=4, padding=1
+#             ),  # 64 x 64
+#             ConvBNRelu(
+#                 self.dim_h, self.dim_h * 2, stride=2, kernel_size=4, padding=1
+#             ),  # 32 x 32
+#             ConvBNRelu(
+#                 self.dim_h * 2,
+#                 self.dim_h * 2,
+#                 stride=4,
+#                 kernel_size=5,
+#                 padding=1,
+#             ),  # 8 x 8
+#             ConvBNRelu(
+#                 self.dim_h * 2,
+#                 self.dim_h * 4,
+#                 stride=4,
+#                 kernel_size=5,
+#                 padding=1,
+#             ),  # 2 x 2
+#             ConvBNRelu(
+#                 self.dim_h * 4,
+#                 self.dim_h * 4,
+#                 stride=2,
+#                 kernel_size=2,
+#             ),  # 1 x 1
+#         )
+#         self.fc = nn.Linear(self.dim_h * 4, self.n_z)
+
+#     def forward(self, x):
+#         x = self.main(x)
+#         x = x.squeeze()
+#         x = self.fc(x)
+#         return x
+
+
 class Encoder(nn.Module):
     def __init__(self, args):
         super(Encoder, self).__init__()
@@ -112,6 +158,58 @@ class Encoder(nn.Module):
         x = self.fc(x)
         return x
 
+
+
+# class Decoder(nn.Module):
+#     def __init__(self, args):
+#         super(Decoder, self).__init__()
+
+#         self.n_channel = args.n_channel
+#         self.dim_h = args.dim_h
+#         self.n_z = args.n_z
+
+#         self.proj = nn.Sequential(
+#             nn.Linear(self.n_z, self.dim_h * (2**3)), nn.ReLU()
+#         )
+
+#         self.main = nn.Sequential(
+#             ConvTBNRelu(
+#                 self.dim_h * 2,
+#                 self.dim_h * 2,
+#                 stride=2,
+#                 kernel_size=4,
+#                 padding=1,
+#             ),  # 4 x 4
+#             ConvTBNRelu(
+#                 self.dim_h * 2,
+#                 self.dim_h * 2,
+#                 stride=2,
+#                 kernel_size=4,
+#                 padding=1,
+#             ),  # 8 x 8
+#             ConvTBNRelu(
+#                 self.dim_h * 2, self.dim_h, stride=2, kernel_size=4, padding=1
+#             ),  # 16 x 16
+#             ConvTBNRelu(
+#                 self.dim_h, self.dim_h // 2, stride=2, kernel_size=4, padding=1
+#             ),  # 32 x 32
+#             ConvTBNRelu(
+#                 self.dim_h // 2,
+#                 self.dim_h // 4,
+#                 stride=2,
+#                 kernel_size=4,
+#                 padding=1,
+#             ),  # 64 x 64
+#             ConvTBNRelu(
+#                 self.dim_h // 4, 1, stride=2, kernel_size=4, padding=1
+#             ),  # 128 x 128
+#         )
+
+#     def forward(self, x):
+#         x = self.proj(x)
+#         x = x.view(-1, self.dim_h * 2, 2, 2)
+#         x = self.main(x)
+#         return x
 
 class Decoder(nn.Module):
     def __init__(self, args):
@@ -211,7 +309,7 @@ def main():
 
     torch.manual_seed(123)
 
-    parser = argparse.ArgumentParser(description="PyTorch MNIST WAE-GAN")
+    parser = argparse.ArgumentParser(description="PyTorch WAE-GAN")
     parser.add_argument(
         "-batch_size",
         type=int,
