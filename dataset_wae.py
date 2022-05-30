@@ -10,7 +10,7 @@ class TrainDataset(IterableDataset):
     def __init__(
         self,
         data_path: str,
-        crops_per_slice: int = 4,
+        crops_per_slice: int = 1,
     ) -> None:
         super().__init__()
 
@@ -66,15 +66,16 @@ class TestDataset(IterableDataset):
     def __init__(
         self,
         data_path: str,
-        crops_per_slice: int = 4,
+        crops_per_slice: int = 1, 
+        image_gen: bool = False
     ) -> None:
         super().__init__()
 
         self.crops_per_slice = crops_per_slice
 
-        self._process_data(np.load(data_path))
+        self._process_data(np.load(data_path), image_gen)
 
-    def _process_data(self, data):
+    def _process_data(self, data, image_gen=False):
         #self.osgb_data = np.stack(
         #    [
         ##        data["x_osgb"],
@@ -87,7 +88,7 @@ class TestDataset(IterableDataset):
         for day in data_array:
             # change 4 (20 min) to whichever skip you like
             # this might depend on your memory constraints
-            for i in range(t-1, 1, -1):
+            for i in range(t-1, 1, -4):
                 slice = day[i : i + 1, :, :]
                 #target_slice = day[i + 12 : i + 36, :, :]
                 crops = 0
@@ -97,6 +98,11 @@ class TestDataset(IterableDataset):
                         self.cached_items.append(crop)
                         crops += 1
         shuffle(self.cached_items)
+
+        if image_gen:
+            self.cached_items = np.array(self.cached_items[:10])
+            with open('./ground_truth_images.npy', 'wb') as f:
+                np.save(f, self.cached_items)
 
 
     def _get_crop(self, slice, y, x):
